@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<link href="../img/favicon.png" rel="icon" type="image/png"/>
+<!-- Barlow Font -->
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<title>Gobbles — Cope Harder!</title>
+<!-- Chart.js -->
+
+<!-- Chart Data Labels Plugin -->
+
+<!-- Solana Web3 -->
+
+<!-- Supabase -->
+
+
+<link href="style.css" rel="stylesheet"/></head>
+<body>
+<!-- ⭐ Partikel/Sterne Canvas -->
+<canvas id="particles"></canvas>
+<header>
+<div class="h-wrap">
+<div class="brand-wrap">
+<img alt="Gobbles" class="logo-anim" id="logoImg" src="../img/1boss.png"/>
+<div>
+<div class="brand-main"><span class="g-wobble">G</span>obbles</div>
+<div class="small">Cope Harder!</div>
+</div>
+<!-- 🔹 Cobie Home Button -->
+<a class="home-link" href="https://www.cobie.uk/" target="_blank">
+<img alt="Cobie" class="cobie-gif" src="../img/cobieGif.gif"/>
+<span class="home-text">Cobie Main</span>
+</a>
+</div>
+<div class="header-right-wrap">
+<span class="profile-link">Profile</span>
+<span class="status" id="wallet-status">Not connected</span>
+<button class="btn connect-btn" id="connectBtn">Connect Wallet</button>
+</div>
+</div>
+<!-- 🔹 Neon-Lichtstreifen unter dem Header -->
+<div class="header-glow"></div>
+</header>
+<!-- Sound for posts -->
+<audio id="postSound">
+<source src="../sounds/mgs2.mp3" type="audio/mpeg"/>
+</audio>
+<!-- Boom Sound for new posts -->
+<audio id="boomSound">
+<source src="../sounds/coin.mp3" type="audio/mpeg"/>
+</audio>
+<!-- Rick Easter Egg Sound -->
+<audio id="rickSound">
+<source src="../sounds/portal.mp3" type="audio/mpeg"/>
+</audio>
+<!-- === Profile Modal === -->
+<div class="modal" id="profileModal">
+<div class="modal-content">
+<span class="close-btn" onclick="closeProfile()">×</span>
+<div class="profile-body">
+<!-- Left Side -->
+<div class="profile-left">
+<h2>Your Profile</h2>
+<label class="input-label">Profile Image</label>
+<img alt="Avatar Preview" class="avatar-preview" id="avatarPreview"/>
+<div class="profile-image-buttons">
+<label class="upload-btn" for="avatarUpload">Upload Image</label>
+<button class="reset-btn" onclick="resetAvatar()">🔁 Reset to NFT</button>
+</div>
+<input accept="image/*" class="file-hidden" id="avatarUpload" type="file"/>
+<label class="input-label">About you (max 140 chars)</label>
+<textarea class="text-input" id="bioInput" maxlength="140" placeholder="Write something about yourself (max 140 chars)..."></textarea>
+<h3 style="margin-top:20px;">Portfolio Allocation</h3>
+<div class="input-pair">
+<input class="text-input asset-input" id="assetInput" placeholder="Asset (e.g. Solana)" type="text"/>
+<input class="text-input percent-input" id="percentInput" placeholder="%" type="number"/>
+</div>
+<div class="portfolio-list" id="portfolioList"></div>
+<div class="small" style="color: var(--muted); margin-top: 8px;">
+          Press Enter after filling both fields to add assets
+        </div>
+<button class="btn" onclick="saveProfile()" style="margin-top: 15px;">💾 Save Profile</button>
+</div>
+<!-- Right Side -->
+<div class="profile-right">
+<canvas id="portfolioChart"></canvas>
+<!-- 🔹 Bio-Anzeige unter dem Chart -->
+<div id="bioDisplay" style="margin-top:20px;
+                    white-space:pre-line;
+                    color:#9ed9e6;
+                    font-size:14px;
+                    line-height:1.4;
+                    text-align:center;">
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- === HENSHIN Reply Modal === -->
+<div class="reply-modal hidden" id="replyModal">
+<div class="reply-box">
+<h3>🌀 HENSHIN – Reply</h3>
+<textarea id="replyText" maxlength="140" placeholder="Type your reply (max 140 chars)..."></textarea>
+<div class="reply-actions">
+<span id="charCount">0 / 140</span>
+<button id="cancelReply">Cancel</button>
+<button id="sendReply">Send</button>
+</div>
+</div>
+</div>
+<!-- === Reply Side Panel === -->
+<div class="reply-panel hidden" id="replyPanel">
+<div class="reply-panel-inner">
+<div class="reply-header">
+<h3><span class="icon">🌀</span> Replies</h3>
+<button class="close-replies" id="closeReplies">✖</button>
+</div>
+<div class="reply-list" id="replyList"></div>
+</div>
+</div>
+<main class="container">
+<div class="grid">
+<section>
+<div class="card">
+<div class="body">
+<h3>Create Post</h3>
+<textarea id="postText" maxlength="140" placeholder="What's happening? Use #hashtags for trends!"></textarea>
+<div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+<div class="small">Fee: 0.001 SOL</div>
+<div style="flex:1"></div>
+<button class="btn" id="postBtn">Post</button>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:12px">
+<div class="body">
+<h3>Community Feed <span id="filterBadge" style="display:none"></span></h3>
+</div>
+<div class="feed-separator"></div>
+<div id="feed"></div>
+</div>
+</section>
+<aside>
+<div class="card">
+<div class="body">
+<h3>Trending</h3>
+<div id="trendBox">
+<div class="small" style="text-align:center;padding:20px;color:var(--muted)">
+              No trends yet. Be the first to post with #hashtags!
+            </div>
+</div>
+<ul id="trending-list"></ul>
+<button class="btn" id="resetFeedBtn" style="margin-top:10px;width:100%;">
+            🔄 Show All Posts
+          </button>
+</div>
+</div>
+<div class="card" style="margin-top:12px">
+<div class="body">
+<h3>Sentiment &amp; Trends</h3>
+<div class="input-group">
+<label class="input-label">Search Posts</label>
+<input class="text-input" placeholder="Enter keyword..." type="text"/>
+</div>
+<div class="input-group">
+<label class="input-label">Filter by User</label>
+<input class="text-input" placeholder="Wallet address..." type="text"/>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- 🌀 Rick Easter Egg -->
+<div id="portal"></div>
+<img alt="Rick" id="rick" src="../img/rick.png"/>
+<div id="rick-text">Never go into Crypto, Morty!</div>
+
+<script src="script.js"></script></body>
+</html>
