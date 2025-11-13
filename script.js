@@ -1,12 +1,3 @@
-
-
-
-
-
-
-
-
-
 /* ---------- CONFIG ---------- */
 const SUPABASE_URL  = "https://nigwdyolfgixcejslaue.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pZ3dkeW9sZmdpeGNlanNsYXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwNTMzNzMsImV4cCI6MjA3NTYyOTM3M30.u3g0vzcuF6LstbnsrYyzl1TezJa-lKkd0xk55iddoyw";
@@ -56,25 +47,24 @@ document.addEventListener("DOMContentLoaded", () => {
 /* === 🌀 Dynamic Logo Switcher === */
 const logoImg = document.getElementById("logoImg");
 const logoImages = [
- "../img/1Solana.png",
-  "../img/1prison6.png",
-  "../img/1boss.png",
-  "../img/1bitcoin.png", 
-  "../img/1prison3.jpg",
-  "../img/1Solana.png",
-  "../img/1prison6.png",
-  "../img/1uuuuu.png",
-  "../img/1Troll.png",
-  "../img/1bitcoin.png",
-  "../img/1prison2.png",
-  "../img/1Solana.png",
-  "../img/1prison4.png",
-  "../img/1prison6.png",
-  "../img/1bitcoin.png",
-  "../img/1prison7.png",
-  "../img/1prison8.png",
-  "../img/1prison6.png"
-
+  "/img/1Solana.png",
+  "/img/1prison6.png",
+  "/img/1boss.png",
+  "/img/1bitcoin.png", 
+  "/img/1prison3.jpg",
+  "/img/1Solana.png",
+  "/img/1prison6.png",
+  "/img/1uuuuu.png",
+  "/img/1Troll.png",
+  "/img/1bitcoin.png",
+  "/img/1prison2.png",
+  "/img/1Solana.png",
+  "/img/1prison4.png",
+  "/img/1prison6.png",
+  "/img/1bitcoin.png",
+  "/img/1prison7.png",
+  "/img/1prison8.png",
+  "/img/1prison6.png"
 ];
 let currentLogo = 0;
 
@@ -633,7 +623,7 @@ async function loadFeed(tag = null){
 
             <!-- Bestehende Buttons -->
             <span class="icon-btn sol-btn" onclick="tipUser('${p.wallet}')">
-              <img src="../img/1Solana.png" class="sol-icon">
+              <img src="/img/1Solana.png" class="sol-icon">
             </span>
 
             <a target="_blank" class="small" href="https://solscan.io/tx/${p.tx}">
