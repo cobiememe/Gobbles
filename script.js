@@ -26,19 +26,18 @@ let currentFilter = null;
 let uploadedAvatar = null;
 
 /* === Gobbles Portal Hover Sound === */
-// Spielt den Rick & Morty Portal-Sound ab, wenn ein Post gehovert wird 🌀
 document.addEventListener("DOMContentLoaded", () => {
   const portalSound = document.getElementById("rickSound");
-  if (!portalSound) return console.warn("⚠️ Portal-Sound (rickSound) nicht gefunden!");
+  if (!portalSound) return;
 
   document.querySelectorAll(".post").forEach(post => {
     post.addEventListener("mouseenter", () => {
       try {
-        portalSound.currentTime = 0; // Neustart
-        portalSound.volume = 0.15;   // Angenehme Lautstärke
-        portalSound.play();
+        portalSound.currentTime = 0;
+        portalSound.volume = 0.15;
+        portalSound.play().catch(e => console.log("Portal sound play failed:", e));
       } catch (err) {
-        console.warn("⚠️ Portal-Sound konnte nicht abgespielt werden:", err);
+        console.log("⚠️ Portal-Sound konnte nicht abgespielt werden");
       }
     });
   });
@@ -68,17 +67,17 @@ const logoImages = [
 ];
 let currentLogo = 0;
 
-// Logo wechseln alle 9 Sekunden (gleich zur CSS-Dauer der spinPulse Animation)
-setInterval(() => {
-  currentLogo = (currentLogo + 1) % logoImages.length;
-  logoImg.style.opacity = "0";
-  
-  // Sanfter Übergang
-  setTimeout(() => {
-    logoImg.src = logoImages[currentLogo];
-    logoImg.style.opacity = "1";
-  }, 400);
-}, 9000);
+if (logoImg) {
+  setInterval(() => {
+    currentLogo = (currentLogo + 1) % logoImages.length;
+    logoImg.style.opacity = "0";
+    
+    setTimeout(() => {
+      logoImg.src = logoImages[currentLogo];
+      logoImg.style.opacity = "1";
+    }, 400);
+  }, 9000);
+}
 
 /* === Fallback Avatar Generation === */
 function generateFallbackAvatar(address) {
@@ -87,10 +86,8 @@ function generateFallbackAvatar(address) {
   canvas.width = 200;
   canvas.height = 200;
 
-  // Generate unique hue based on wallet address
   const hue = address.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   
-  // Create gradient
   const grad = ctx.createLinearGradient(0, 0, 200, 200);
   grad.addColorStop(0, `hsl(${hue}, 70%, 50%)`);
   grad.addColorStop(1, `hsl(${(hue + 80) % 360}, 70%, 60%)`);
@@ -98,7 +95,6 @@ function generateFallbackAvatar(address) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 200, 200);
 
-  // Add some visual texture
   ctx.fillStyle = `hsla(${(hue + 120) % 360}, 60%, 40%, 0.1)`;
   for (let i = 0; i < 50; i++) {
     const x = Math.random() * 200;
@@ -121,12 +117,13 @@ const avatarPreview = document.getElementById("avatarPreview");
 const avatarUpload = document.getElementById("avatarUpload");
 
 function addAssetToChart() {
+  if (!assetInput || !percentInput) return;
+  
   const name = assetInput.value.trim();
   const val = parseFloat(percentInput.value);
   
   if (!name || !val || val <= 0) return;
   
-  // Check if asset already exists
   const existingIndex = portfolio.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
   if (existingIndex > -1) {
     portfolio[existingIndex].val = val;
@@ -147,6 +144,7 @@ function removeAsset(index) {
 }
 
 function updatePortfolioList() {
+  if (!portfolioList) return;
   portfolioList.innerHTML = portfolio.map((item, index) => `
     <div class="portfolio-item">
       <span>${item.name}</span>
@@ -157,36 +155,44 @@ function updatePortfolioList() {
 }
 
 // Smart input flow
-assetInput.addEventListener("keydown", e => {
-  if (e.key === "Enter" && percentInput.value) {
-    addAssetToChart();
-  }
-});
+if (assetInput) {
+  assetInput.addEventListener("keydown", e => {
+    if (e.key === "Enter" && percentInput.value) {
+      addAssetToChart();
+    }
+  });
+}
 
-percentInput.addEventListener("keydown", e => {
-  if (e.key === "Enter" && assetInput.value) {
-    addAssetToChart();
-  }
-});
+if (percentInput) {
+  percentInput.addEventListener("keydown", e => {
+    if (e.key === "Enter" && assetInput.value) {
+      addAssetToChart();
+    }
+  });
+}
 
 // Avatar upload handler
-avatarUpload.addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      uploadedAvatar = event.target.result;
-      avatarPreview.src = uploadedAvatar;
-    };
-    reader.readAsDataURL(file);
-  }
-});
+if (avatarUpload) {
+  avatarUpload.addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        uploadedAvatar = event.target.result;
+        if (avatarPreview) avatarPreview.src = uploadedAvatar;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+}
 
 /* === Portfolio Chart === */
 let chartCtx = document.getElementById("portfolioChart")?.getContext("2d");
 let portfolioChart;
 
 function updateChart() {
+  if (!chartCtx) return;
+  
   const assets = portfolio.map(p => p.name);
   const values = portfolio.map(p => p.val);
 
@@ -258,24 +264,26 @@ async function loadProfile() {
       return;
     }
 
+    const bioInput = document.getElementById("bioInput");
+    const bioDisplay = document.getElementById("bioDisplay");
+
     if (data) {
-      document.getElementById("bioInput").value = data.bio || "";
+      if (bioInput) bioInput.value = data.bio || "";
       portfolio = Array.isArray(data.portfolio) ? data.portfolio : [];
       updatePortfolioList();
       updateChart();
 
-      // 🔹 Zeige Bio im Profil unter dem Chart
-      document.getElementById("bioDisplay").textContent = data.bio || "";
+      if (bioDisplay) bioDisplay.textContent = data.bio || "";
 
-      if (data.avatar) {
+      if (data.avatar && avatarPreview) {
         uploadedAvatar = data.avatar;
         avatarPreview.src = data.avatar;
-      } else {
+      } else if (avatarPreview) {
         avatarPreview.src = generateFallbackAvatar(wallet);
       }
-    } else {
+    } else if (avatarPreview) {
       avatarPreview.src = generateFallbackAvatar(wallet);
-      document.getElementById("bioDisplay").textContent = "";
+      if (bioDisplay) bioDisplay.textContent = "";
     }
   } catch (err) {
     console.error("❌ JS error while loading profile:", err);
@@ -289,7 +297,8 @@ async function saveProfile() {
   }
 
   try {
-    const bio = document.getElementById("bioInput").value.trim().slice(0, 140);
+    const bioInput = document.getElementById("bioInput");
+    const bio = bioInput ? bioInput.value.trim().slice(0, 140) : "";
     const safePortfolio = Array.isArray(portfolio)
       ? portfolio.map(p => ({
           name: String(p.name || "").slice(0, 32),
@@ -322,8 +331,8 @@ async function saveProfile() {
     alert("✅ Profile saved successfully!");
     updateChart();
     
-    // 🔹 Aktualisiere Anzeige sofort
-    document.getElementById("bioDisplay").textContent = bio;
+    const bioDisplay = document.getElementById("bioDisplay");
+    if (bioDisplay) bioDisplay.textContent = bio;
     
     closeProfile();
   } catch (err) {
@@ -344,26 +353,24 @@ async function resetAvatar() {
   }
 
   try {
-    // Set uploadedAvatar to null
     uploadedAvatar = null;
     
-    // Try to get NFT avatar first
     const nftAvatar = await avatar(wallet);
     
-    if (nftAvatar) {
-      avatarPreview.src = nftAvatar;
-    } else {
-      // Fallback to generated avatar
-      avatarPreview.src = generateFallbackAvatar(wallet);
+    if (avatarPreview) {
+      if (nftAvatar) {
+        avatarPreview.src = nftAvatar;
+      } else {
+        avatarPreview.src = generateFallbackAvatar(wallet);
+      }
     }
 
-    // Save immediately to update database
     const { error } = await db
       .from("profiles")
       .upsert(
         {
           wallet,
-          avatar: null, // Explicitly set to null in database
+          avatar: null,
           updated_at: new Date().toISOString()
         },
         { onConflict: "wallet" }
@@ -396,88 +403,101 @@ function renderTextWithTags(text){
 
 /* ---------- Partikel/Sterne Animation ---------- */
 const canvas = document.getElementById("particles");
-const ctx = canvas.getContext("2d");
-let particles = [];
+if (canvas) {
+  const ctx = canvas.getContext("2d");
+  let particles = [];
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+
+  // Erstelle Partikel/Sterne
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 1.5 + 0.5,
+      speedX: (Math.random() - 0.5) * 0.3,
+      speedY: (Math.random() - 0.5) * 0.3,
+      alpha: Math.random() * 0.6 + 0.2
+    });
+  }
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.speedX; 
+      p.y += p.speedY;
+      
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+
+      ctx.fillStyle = `rgba(0,234,255,${p.alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
 }
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
-// Erstelle Partikel/Sterne
-for (let i = 0; i < 80; i++) {
-  particles.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    size: Math.random() * 1.5 + 0.5, // Kleinere, subtilere Größe
-    speedX: (Math.random() - 0.5) * 0.3, // Langsamere Bewegung
-    speedY: (Math.random() - 0.5) * 0.3,
-    alpha: Math.random() * 0.6 + 0.2 // Subtile Transparenz
-  });
-}
-
-function animateParticles() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  particles.forEach(p => {
-    p.x += p.speedX; 
-    p.y += p.speedY;
-    
-    // Wrap around edges
-    if (p.x < 0) p.x = canvas.width;
-    if (p.x > canvas.width) p.x = 0;
-    if (p.y < 0) p.y = canvas.height;
-    if (p.y > canvas.height) p.y = 0;
-
-    ctx.fillStyle = `rgba(0,234,255,${p.alpha})`;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  requestAnimationFrame(animateParticles);
-}
-animateParticles();
 
 /* ---------- Wallet helpers ---------- */
 function getWallet(){ return window.phantom?.solana || window.solana; }
 
 function uiConnected(pk){ 
+  if (!statusEl || !connectBtn) return;
+  
   statusEl.textContent = "✅ ";
   const span = document.createElement("span");
   statusEl.appendChild(span);
   
-  // ✅ Fallback falls displayWalletLabel nicht verfügbar
-  if (typeof displayWalletLabel === 'function') {
-    displayWalletLabel(pk, span);
-  } else {
-    span.textContent = `${pk.slice(0,4)}…${pk.slice(-4)}`;
-  }
+  span.textContent = `${pk.slice(0,4)}…${pk.slice(-4)}`;
   connectBtn.textContent="Disconnect"; 
   
-  // Load profile when wallet connects
   loadProfile();
 }
 
 function uiDisconnected(){ 
+  if (!statusEl || !connectBtn) return;
   statusEl.textContent = "Not connected"; 
   connectBtn.textContent="Connect Wallet"; 
 }
 
-connectBtn.onclick = async ()=> wallet ? disconnect() : connect();
+if (connectBtn) {
+  connectBtn.onclick = async ()=> wallet ? disconnect() : connect();
+}
 
 async function connect(){
   const p = getWallet();
-  if(!p){ alert("Phantom wallet not found. Please install Phantom."); window.open("https://phantom.app","_blank"); return; }
-  const r = await p.connect();
-  wallet = r.publicKey.toString();
-  uiConnected(wallet);
+  if(!p){ 
+    alert("Phantom wallet not found. Please install Phantom."); 
+    window.open("https://phantom.app","_blank"); 
+    return; 
+  }
+  try {
+    const r = await p.connect();
+    wallet = r.publicKey.toString();
+    uiConnected(wallet);
+  } catch (error) {
+    console.error("Connection failed:", error);
+    alert("Wallet connection failed: " + error.message);
+  }
 }
 
 async function disconnect(){
-  await getWallet()?.disconnect();
-  wallet = null; 
-  uiDisconnected();
+  try {
+    await getWallet()?.disconnect();
+    wallet = null; 
+    uiDisconnected();
+  } catch (error) {
+    console.error("Disconnection failed:", error);
+  }
 }
 
 /* ---------- Payment (robust confirm) ---------- */
@@ -511,32 +531,43 @@ async function avatar(pub){
   const cache = localStorage.getItem("a_"+pub);
   if(cache) return cache;
 
-  const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS}`,{
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ jsonrpc:"2.0", id:"nft", method:"getAssetsByOwner", params:{ ownerAddress:pub } })
-  });
-  const json = await r.json();
-  const items = json?.result?.items || [];
-  // prefer metadata.image, fallback content.files[0].uri
-  let img = items.find(n=>n?.content?.metadata?.image)?.content?.metadata?.image;
-  if(!img) img = items.find(n=>n?.content?.files?.[0]?.uri)?.content?.files?.[0]?.uri || null;
+  try {
+    const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS}`,{
+      method:"POST", 
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ 
+        jsonrpc:"2.0", 
+        id:"nft", 
+        method:"getAssetsByOwner", 
+        params:{ ownerAddress:pub } 
+      })
+    });
+    
+    if (!r.ok) throw new Error("Helius API not available");
+    
+    const json = await r.json();
+    const items = json?.result?.items || [];
+    let img = items.find(n=>n?.content?.metadata?.image)?.content?.metadata?.image;
+    if(!img) img = items.find(n=>n?.content?.files?.[0]?.uri)?.content?.files?.[0]?.uri || null;
 
-  if(img) localStorage.setItem("a_"+pub, img);
-  return img;
+    if(img) localStorage.setItem("a_"+pub, img);
+    return img;
+  } catch (error) {
+    console.error("Error fetching NFT avatar:", error);
+    return null;
+  }
 }
 
 /* ---------- DB ops ---------- */
 async function savePost(text, tx){
-  // Hashtags extrahieren (#solana #gobbles #pump)
   const tags = [...text.matchAll(/#(\w+)/g)].map(m => m[1].toLowerCase());
 
-  // ✅ Speichern mit Tags und created_at
   const { error } = await db.from("posts").insert([{ 
     wallet, 
     content:text, 
     tx, 
     tags,
-    created_at: new Date().toISOString() // 👈 WICHTIG: created_at mitgeben
+    created_at: new Date().toISOString()
   }]);
   if(error) throw error;
 }
@@ -545,23 +576,29 @@ async function savePost(text, tx){
 window.vote = async (id, dir) => {
   if(!wallet) return alert("Please connect your wallet!");
 
-  const success = await db.rpc(
-    dir === "up" ? "vote_up" : "vote_down",
-    { p_post_id: id, p_wallet: wallet }
-  );
+  try {
+    const success = await db.rpc(
+      dir === "up" ? "vote_up" : "vote_down",
+      { p_post_id: id, p_wallet: wallet }
+    );
 
-  if(!success.error){
-    localStorage.setItem("vote_" + id, dir);
+    if(!success.error){
+      localStorage.setItem("vote_" + id, dir);
+    }
+
+    loadFeed(); 
+  } catch (error) {
+    console.error("Voting error:", error);
+    alert("Voting failed: " + error.message);
   }
-
-  loadFeed(); 
 };
 
 /* ---------- Feed loading ---------- */
 async function loadFeed(tag = null){
+  if (!feed || !filterBadge) return;
+  
   currentFilter = tag;
   
-  // Update filter badge
   if(tag) {
     filterBadge.style.display = 'inline';
     filterBadge.innerHTML = `Filter: #${tag} <span class="clear-filter" style="cursor:pointer;margin-left:8px">✕</span>`;
@@ -577,69 +614,73 @@ async function loadFeed(tag = null){
 
   const { data, error } = await query.limit(50);
     
-  if(error){ console.error("Supabase load error:", error); return; }
-
-  // ✅ Parallele Avatar-Abfragen für bessere Performance
-  const postsWithAvatars = await Promise.all(
-    (data || []).map(async p => ({ 
-      ...p, 
-      img: await avatar(p.wallet) 
-    }))
-  );
-
-  const htmlParts = [];
-  
-  for(const p of postsWithAvatars){
-    const hasNft = !!p.img; // true wenn ein NFT gefunden wurde
-    const userVote = localStorage.getItem("vote_" + p.id);
-    const replyCount = p.replies?.[0]?.count || 0;
-
-    htmlParts.push(`
-      <div class="post">
-        <div class="avatar ${hasNft ? "nft-halo" : ""}">${p.img ? `<img src="${p.img}" alt="pfp">` : ""}</div>
-        <div>
-          <div class="post-header">
-            <b class="wallet-label" data-wallet="${p.wallet}">${p.wallet.slice(0,6)}...</b>
-            <div class="header-actions">
-              <button class="btn-copy" title="Copy address" data-wallet="${p.wallet}">📋</button>
-              <button class="btn-profile" title="View profile" data-wallet="${p.wallet}">👤</button>
-            </div>
-          </div>
-          <p style="white-space: pre-line">${renderTextWithTags(p.content)}</p>
-          <div class="post-actions">
-            
-            <span class="vote-btn ${userVote === "up" ? "active-up" : ""}" onclick="vote('${p.id}','up')">
-              👍 ${p.upvotes || 0}
-            </span>
-
-            <span class="vote-btn ${userVote === "down" ? "active-down" : ""}" onclick="vote('${p.id}','down')">
-              👎 ${p.downvotes || 0}
-            </span>
-
-            <!-- Reply Button mit Zähler -->
-            <button class="btn-reply" title="Reply (返信)" data-wallet="${p.wallet}" data-post-id="${p.id}">
-              返信 ${replyCount}
-            </button>
-
-            <!-- Bestehende Buttons -->
-            <span class="icon-btn sol-btn" onclick="tipUser('${p.wallet}')">
-              <img src="/img/1Solana.png" class="sol-icon">
-            </span>
-
-            <a target="_blank" class="small" href="https://solscan.io/tx/${p.tx}">
-              View TX
-            </a>
-          </div>
-        </div>
-      </div>`);
+  if(error){ 
+    console.error("Supabase load error:", error); 
+    return; 
   }
 
-  feed.innerHTML = htmlParts.join("");
-  displayWalletLabels();
+  try {
+    const postsWithAvatars = await Promise.all(
+      (data || []).map(async p => ({ 
+        ...p, 
+        img: await avatar(p.wallet) 
+      }))
+    );
 
-  // Clear filter event
-  const clearBtn = document.querySelector('.clear-filter');
-  if(clearBtn) clearBtn.onclick = () => loadFeed();
+    const htmlParts = [];
+    
+    for(const p of postsWithAvatars){
+      const hasNft = !!p.img;
+      const userVote = localStorage.getItem("vote_" + p.id);
+      const replyCount = p.replies?.[0]?.count || 0;
+
+      htmlParts.push(`
+        <div class="post">
+          <div class="avatar ${hasNft ? "nft-halo" : ""}">${p.img ? `<img src="${p.img}" alt="pfp">` : ""}</div>
+          <div>
+            <div class="post-header">
+              <b class="wallet-label" data-wallet="${p.wallet}">${p.wallet.slice(0,6)}...</b>
+              <div class="header-actions">
+                <button class="btn-copy" title="Copy address" data-wallet="${p.wallet}">📋</button>
+                <button class="btn-profile" title="View profile" data-wallet="${p.wallet}">👤</button>
+              </div>
+            </div>
+            <p style="white-space: pre-line">${renderTextWithTags(p.content)}</p>
+            <div class="post-actions">
+              
+              <span class="vote-btn ${userVote === "up" ? "active-up" : ""}" onclick="vote('${p.id}','up')">
+                👍 ${p.upvotes || 0}
+              </span>
+
+              <span class="vote-btn ${userVote === "down" ? "active-down" : ""}" onclick="vote('${p.id}','down')">
+                👎 ${p.downvotes || 0}
+              </span>
+
+              <button class="btn-reply" title="Reply (返信)" data-wallet="${p.wallet}" data-post-id="${p.id}">
+                返信 ${replyCount}
+              </button>
+
+              <span class="icon-btn sol-btn" onclick="tipUser('${p.wallet}')">
+                <img src="/img/1Solana.png" class="sol-icon">
+              </span>
+
+              <a target="_blank" class="small" href="https://solscan.io/tx/${p.tx}">
+                View TX
+              </a>
+            </div>
+          </div>
+        </div>`);
+    }
+
+    feed.innerHTML = htmlParts.join("");
+    displayWalletLabels();
+
+    const clearBtn = document.querySelector('.clear-filter');
+    if(clearBtn) clearBtn.onclick = () => loadFeed();
+  } catch (error) {
+    console.error("Error loading feed:", error);
+    feed.innerHTML = `<div class="post"><p>Error loading posts. Please try again.</p></div>`;
+  }
 }
 
 /* ---------- Wallet Label Display ---------- */
@@ -647,13 +688,28 @@ async function displayWalletLabels() {
   document.querySelectorAll(".wallet-label").forEach(async el => {
     const wallet = el.dataset.wallet;
     const cache = localStorage.getItem("label_" + wallet);
-    if(cache) { el.textContent = cache; return; }
+    if(cache) { 
+      el.textContent = cache; 
+      return; 
+    }
 
-    const r = await fetch(`https://api.solana.fm/v0/accounts/${wallet}`);
-    const json = await r.json();
-    const label = json?.result?.account?.accountName || wallet.slice(0,6)+"...";
-    localStorage.setItem("label_" + wallet, label);
-    el.textContent = label;
+    try {
+      const r = await fetch(`https://api.solana.fm/v0/accounts/${wallet}`);
+      if (!r.ok) {
+        // Wenn API nicht verfügbar, verwende Standard-Format
+        el.textContent = wallet.slice(0,6)+"...";
+        return;
+      }
+      
+      const json = await r.json();
+      const label = json?.result?.account?.accountName || wallet.slice(0,6)+"...";
+      localStorage.setItem("label_" + wallet, label);
+      el.textContent = label;
+    } catch (error) {
+      console.log("⚠️ Solana FM API nicht verfügbar, verwende Standard-Label");
+      // Fallback auf Standard-Format bei Fehler
+      el.textContent = wallet.slice(0,6)+"...";
+    }
   });
 }
 
@@ -669,53 +725,51 @@ async function tipUser(toWallet) {
 }
 
 /* ---------- Posting ---------- */
-postBtn.onclick = async ()=>{
-  if(!wallet) return alert("Please connect your wallet!");
-  const text = postText.value.trim();
-  if(!text) return alert("Please enter some text");
-  if(text.length > 140) return alert("Max 140 characters");
+if (postBtn && postText) {
+  postBtn.onclick = async ()=>{
+    if(!wallet) return alert("Please connect your wallet!");
+    const text = postText.value.trim();
+    if(!text) return alert("Please enter some text");
+    if(text.length > 140) return alert("Max 140 characters");
 
-  try {
-    // 🔥 Sending Status anzeigen
-    const originalText = postBtn.textContent;
-    postBtn.textContent = "Sending 0.001 SOL...";
-    postBtn.disabled = true;
+    try {
+      const originalText = postBtn.textContent;
+      postBtn.textContent = "Sending 0.001 SOL...";
+      postBtn.disabled = true;
 
-    const sig = await pay(0.001);
-    await savePost(text, sig);
-    
-    // 🔥 WICHTIG: Kurz warten, damit Supabase ready ist
-    await new Promise(r => setTimeout(r, 300));
-    
-    postText.value = "";
-    
-    // 🔥 Feed neu laden
-    await loadFeed();
-    
-    boomSound.play();
-    
-    // Boom animation für den neuesten Post
-    setTimeout(() => {
-      const posts = document.querySelectorAll('.post');
-      if(posts.length > 0) {
-        posts[0].classList.add('post-boom');
-      }
-    }, 100);
+      const sig = await pay(0.001);
+      await savePost(text, sig);
+      
+      await new Promise(r => setTimeout(r, 300));
+      
+      postText.value = "";
+      
+      await loadFeed();
+      
+      if (boomSound) boomSound.play().catch(e => console.log("Boom sound failed"));
+      
+      setTimeout(() => {
+        const posts = document.querySelectorAll('.post');
+        if(posts.length > 0) {
+          posts[0].classList.add('post-boom');
+        }
+      }, 100);
 
-    // ✅ Erfolgsmeldung
-    alert("✅ Posted successfully!");
+      alert("✅ Posted successfully!");
 
-  } catch(e) {
-    alert("Post failed: " + e.message);
-  } finally {
-    // Button zurücksetzen
-    postBtn.textContent = "Post";
-    postBtn.disabled = false;
-  }
-};
+    } catch(e) {
+      alert("Post failed: " + e.message);
+    } finally {
+      postBtn.textContent = "Post";
+      postBtn.disabled = false;
+    }
+  };
+}
 
 /* ---------- Trending Hashtags ---------- */
 async function updateTrends(){
+  if (!trendBox) return;
+  
   const { data } = await db.from("posts").select("tags");
   const allTags = (data || []).flatMap(p => p.tags || []);
   const counts = {};
@@ -738,19 +792,16 @@ function updateTrendingFeed(newHashtag) {
   const existing = list.querySelector(`[data-tag="${newHashtag.tag}"]`);
   
   if (existing) {
-    // Count ändern
     const countElem = existing.querySelector('.count');
     const oldCount = parseInt(countElem.textContent, 10);
     countElem.textContent = newHashtag.count;
 
-    // Wenn sich der Count wirklich geändert hat → Pulse
     if (oldCount !== newHashtag.count) {
       existing.classList.remove('trend-updated');
-      void existing.offsetWidth; // Reflow, um Animation neu zu triggern
+      void existing.offsetWidth;
       existing.classList.add('trend-updated');
     }
   } else {
-    // Neuer Trend hinzugefügt
     const li = document.createElement('li');
     li.dataset.tag = newHashtag.tag;
     li.innerHTML = `${newHashtag.tag} <span class="count">${newHashtag.count}</span>`;
@@ -760,17 +811,21 @@ function updateTrendingFeed(newHashtag) {
 }
 
 // Supabase Realtime für Trending Hashtags
-const hashtagChannel = db
-  .channel('trending-hashtags')
-  .on(
-    'postgres_changes',
-    { event: '*', schema: 'public', table: 'hashtags' },
-    payload => {
-      console.log('📊 Realtime hashtag update:', payload);
-      updateTrendingFeed(payload.new);
-    }
-  )
-  .subscribe();
+try {
+  const hashtagChannel = db
+    .channel('trending-hashtags')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'hashtags' },
+      payload => {
+        console.log('📊 Realtime hashtag update:', payload);
+        updateTrendingFeed(payload.new);
+      }
+    )
+    .subscribe();
+} catch (error) {
+  console.log("Realtime hashtags not available");
+}
 
 /* ---------- Hashtag Click Handler ---------- */
 document.addEventListener("click", e => {
@@ -781,24 +836,29 @@ document.addEventListener("click", e => {
 });
 
 /* ---------- Reset Feed ---------- */
-resetFeedBtn.onclick = () => loadFeed();
+if (resetFeedBtn) {
+  resetFeedBtn.onclick = () => loadFeed();
+}
 
 /* ---------- Profile Modal ---------- */
-document.querySelector(".profile-link").onclick = async () => {
-  if (!wallet) {
-    alert("Please connect your wallet first!");
-    return;
-  }
+const profileLink = document.querySelector(".profile-link");
+if (profileLink) {
+  profileLink.onclick = async () => {
+    if (!wallet) {
+      alert("Please connect your wallet first!");
+      return;
+    }
 
-  // Lade Profil-Daten beim Öffnen
-  await loadProfile();
+    await loadProfile();
 
-  // Zeig das Modal
-  document.getElementById("profileModal").style.display = "block";
-};
+    const profileModal = document.getElementById("profileModal");
+    if (profileModal) profileModal.style.display = "block";
+  };
+}
 
 function closeProfile() {
-  document.getElementById("profileModal").style.display = "none";
+  const profileModal = document.getElementById("profileModal");
+  if (profileModal) profileModal.style.display = "none";
 }
 
 /* === Toast Notification Utility === */
@@ -807,7 +867,9 @@ function toast(msg) {
   el.className = 'toast';
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2000);
+  setTimeout(() => {
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }, 2000);
 }
 
 /* ---------- Neue Button-Funktionen ---------- */
@@ -816,7 +878,7 @@ document.addEventListener('click', e => {
   if (e.target.classList.contains('btn-copy')) {
     const wallet = e.target.dataset.wallet;
     navigator.clipboard.writeText(wallet).then(() => {
-      e.target.textContent = '✅'; // kurz Feedback
+      e.target.textContent = '✅';
       setTimeout(() => (e.target.textContent = '📋'), 1000);
     }).catch(err => {
       console.error('Copy failed:', err);
@@ -828,7 +890,6 @@ document.addEventListener('click', e => {
   // Open profile modal (aktuell nur eigenes Profil)
   if (e.target.classList.contains('btn-profile')) {
     const wallet = e.target.dataset.wallet;
-    // Aktuell öffnen wir nur das eigene Profil-Modal
     if (wallet === window.wallet) {
       document.querySelector(".profile-link").click();
     } else {
@@ -844,73 +905,82 @@ const charCount = document.getElementById('charCount');
 const cancelReply = document.getElementById('cancelReply');
 const sendReply = document.getElementById('sendReply');
 
-let replyTarget = null; // post id
+let replyTarget = null;
 
 // Öffnen beim Klick auf 「返信」
 document.addEventListener('click', e => {
   if (e.target.classList.contains('btn-reply')) {
     replyTarget = e.target.dataset.postId;
-    replyModal.classList.remove('hidden');
-    replyText.value = '';
-    charCount.textContent = '0 / 140';
-    replyText.focus();
+    if (replyModal) {
+      replyModal.classList.remove('hidden');
+      if (replyText) {
+        replyText.value = '';
+        replyText.focus();
+      }
+      if (charCount) charCount.textContent = '0 / 140';
+    }
   }
 });
 
 // Zeichen zählen
-replyText?.addEventListener('input', () => {
-  charCount.textContent = `${replyText.value.length} / 140`;
-});
+if (replyText && charCount) {
+  replyText.addEventListener('input', () => {
+    charCount.textContent = `${replyText.value.length} / 140`;
+  });
+}
 
 // Abbrechen
-cancelReply?.addEventListener('click', () => {
-  replyModal.classList.add('hidden');
-});
+if (cancelReply) {
+  cancelReply.addEventListener('click', () => {
+    if (replyModal) replyModal.classList.add('hidden');
+  });
+}
 
 // Absenden
-sendReply?.addEventListener('click', async () => {
-  const text = replyText.value.trim();
-  if (!text) return alert('Empty reply!');
-  if (text.length > 140) return alert('Too long!');
-  
-  if (!wallet) {
-    alert("Please connect your wallet first!");
-    return;
-  }
-
-  replyModal.classList.add('hidden');
-
-  try {
-    // Speichern in Supabase
-    const { data, error } = await db
-      .from('replies')
-      .insert([{ 
-        post_id: replyTarget, 
-        wallet, 
-        content: text,
-        created_at: new Date().toISOString()
-      }])
-      .select();
-
-    if (error) {
-      console.error(error);
-      toast('❌ Error sending reply');
+if (sendReply) {
+  sendReply.addEventListener('click', async () => {
+    if (!replyText) return;
+    
+    const text = replyText.value.trim();
+    if (!text) return alert('Empty reply!');
+    if (text.length > 140) return alert('Too long!');
+    
+    if (!wallet) {
+      alert("Please connect your wallet first!");
       return;
     }
 
-    toast('🌀 Reply sent!');
-    
-    // Feed neu laden, um Reply-Zähler zu aktualisieren
-    await loadFeed();
-    
-    // Replies-Panel öffnen
-    showRepliesForPost(replyTarget);
-    
-  } catch (err) {
-    console.error('Error saving reply:', err);
-    toast('❌ Error sending reply');
-  }
-});
+    if (replyModal) replyModal.classList.add('hidden');
+
+    try {
+      const { data, error } = await db
+        .from('replies')
+        .insert([{ 
+          post_id: replyTarget, 
+          wallet, 
+          content: text,
+          created_at: new Date().toISOString()
+        }])
+        .select();
+
+      if (error) {
+        console.error(error);
+        toast('❌ Error sending reply');
+        return;
+      }
+
+      toast('🌀 Reply sent!');
+      
+      await loadFeed();
+      
+      showRepliesForPost(replyTarget);
+      
+    } catch (err) {
+      console.error('Error saving reply:', err);
+      toast('❌ Error sending reply');
+    }
+  });
+}
 
 /* ---------- Reply Panel Logic ---------- */
 const replyPanel = document.getElementById('replyPanel');
@@ -918,6 +988,7 @@ const closeReplies = document.getElementById('closeReplies');
 
 async function showRepliesForPost(postId) {
   const list = document.getElementById('replyList');
+  if (!list) return;
 
   const { data, error } = await db
     .from('replies')
@@ -938,15 +1009,19 @@ async function showRepliesForPost(postId) {
     </div>
   `).join('');
 
-  replyPanel.classList.remove('hidden');
-  replyPanel.classList.add('show');
+  if (replyPanel) {
+    replyPanel.classList.remove('hidden');
+    replyPanel.classList.add('show');
+  }
 }
 
 // X-Button klick
-closeReplies?.addEventListener('click', () => {
-  replyPanel.classList.remove('show');
-  setTimeout(() => replyPanel.classList.add('hidden'), 400);
-});
+if (closeReplies && replyPanel) {
+  closeReplies.addEventListener('click', () => {
+    replyPanel.classList.remove('show');
+    setTimeout(() => replyPanel.classList.add('hidden'), 400);
+  });
+}
 
 // Klick außerhalb schließt Panel
 document.addEventListener('click', (e) => {
@@ -959,7 +1034,7 @@ document.addEventListener('click', (e) => {
 /* ---------- Init ---------- */
 loadFeed();
 updateTrends();
-setInterval(updateTrends, 30000); // Update trends every 30 seconds
+setInterval(updateTrends, 30000);
 
 // Auto-connect if previously connected
 window.addEventListener("load", async ()=>{
@@ -971,35 +1046,35 @@ window.addEventListener("load", async ()=>{
 });
 
 /* === 🧩 Easter Egg: Triple Click on Logo === */
-let clickCount = 0;
 const logo = document.querySelector(".logo-anim");
 const rick = document.getElementById("rick");
 const portal = document.getElementById("portal");
 const rickText = document.getElementById("rick-text");
 const rickSound = document.getElementById("rickSound");
 
-logo.addEventListener("click", () => {
-  clickCount++;
-  if (clickCount === 3) {
-    triggerRickEasterEgg();
-    clickCount = 0;
-  }
-  setTimeout(() => (clickCount = 0), 1200);
-});
+if (logo) {
+  let clickCount = 0;
+  logo.addEventListener("click", () => {
+    clickCount++;
+    if (clickCount === 3) {
+      triggerRickEasterEgg();
+      clickCount = 0;
+    }
+    setTimeout(() => (clickCount = 0), 1200);
+  });
+}
 
 function triggerRickEasterEgg() {
-  // 🎵 Sound abspielen
+  if (!rickSound || !rick || !portal || !rickText) return;
+  
   rickSound.play().catch(e => console.log("Rick sound failed:", e));
   
-  // 💚 Portal erscheint
   portal.style.opacity = "1";
   portal.style.animation = "portalOpen 2.8s ease-out, portalGlow 3s ease-in-out infinite";
 
-  // 🌀 Rick fliegt raus mit kombinierter Animation!
   rick.style.opacity = "1";
   rick.style.animation = "rickFlyAndWobble 6s ease-in-out forwards";
 
-  // 💬 Text poppt auf
   setTimeout(() => {
     rickText.style.opacity = "1";
   }, 2300);
@@ -1008,7 +1083,6 @@ function triggerRickEasterEgg() {
     rickText.style.opacity = "0";
   }, 5300);
 
-  // 🔁 Reset alles
   setTimeout(() => {
     portal.style.animation = "none";
     portal.style.opacity = "0";
