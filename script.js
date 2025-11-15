@@ -1127,44 +1127,112 @@ window.addEventListener("load", async ()=>{
 const logo = document.querySelector(".logo-anim");
 const rick = document.getElementById("rick");
 const portal = document.getElementById("portal");
-const rickText = document.getElementById("rickText");
+const rickText = document.getElementById("rick-text");
 const rickSound = document.getElementById("rickSound");
 
-if (logo) {
-  let clickCount = 0;
-  logo.addEventListener("click", () => {
+// Debugging: Prüfe ob alle Elemente existieren
+console.log("Easter Egg Elements:", { logo, rick, portal, rickText, rickSound });
+
+let clickCount = 0;
+let clickTimer = null;
+
+if (logo && rick && portal && rickText) {
+  logo.style.cursor = "pointer"; // Visueller Hinweis
+  
+  logo.addEventListener("click", (e) => {
+    e.preventDefault();
+    
+    // Reset Timer bei jedem Klick
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+    }
+    
     clickCount++;
+    console.log(`Logo clicked ${clickCount} times`);
+    
     if (clickCount === 3) {
+      console.log("🎉 Easter Egg triggered!");
       triggerRickEasterEgg();
       clickCount = 0;
     }
-    setTimeout(() => (clickCount = 0), 1200);
+    
+    // Reset Counter nach 1.2 Sekunden
+    clickTimer = setTimeout(() => {
+      clickCount = 0;
+      console.log("Click counter reset");
+    }, 1200);
   });
+} else {
+  console.error("❌ Easter Egg elements missing!");
 }
 
 function triggerRickEasterEgg() {
-  if (!rickSound || !rick || !portal || !rickText) return;
+  if (!rickSound || !rick || !portal || !rickText) {
+    console.error("Missing Easter Egg elements");
+    return;
+  }
   
-  rickSound.play().catch(e => console.log("Rick sound failed:", e));
-  
-  portal.style.opacity = "1";
-  portal.style.animation = "portalOpen 2.8s ease-out, portalGlow 3s ease-in-out infinite";
+  try {
+    // Reset alle Animationen und Stile
+    resetEasterEgg();
+    
+    // Sound abspielen
+    rickSound.currentTime = 0;
+    rickSound.volume = 0.7;
+    rickSound.play().catch(e => console.log("Rick sound play failed:", e));
+    
+    // Portal Animation
+    portal.style.display = "block";
+    portal.style.opacity = "1";
+    portal.style.animation = "portalOpen 2.8s ease-out, portalGlow 3s ease-in-out infinite";
+    
+    // Rick Animation mit Verzögerung
+    setTimeout(() => {
+      rick.style.display = "block";
+      rick.style.opacity = "1";
+      rick.style.animation = "rickFlyAndWobble 6s ease-in-out forwards";
+    }, 300);
+    
+    // Text Animation
+    setTimeout(() => {
+      rickText.style.display = "block";
+      rickText.style.opacity = "1";
+      rickText.textContent = "Never go into Crypto, Morty!";
+    }, 2300);
+    
+    // Text ausblenden
+    setTimeout(() => {
+      rickText.style.opacity = "0";
+    }, 5300);
+    
+    // Alles ausblenden nach 7 Sekunden
+    setTimeout(() => {
+      resetEasterEgg();
+    }, 7000);
+    
+  } catch (error) {
+    console.error("Easter Egg error:", error);
+  }
+}
 
-  rick.style.opacity = "1";
-  rick.style.animation = "rickFlyAndWobble 6s ease-in-out forwards";
-
-  setTimeout(() => {
-    rickText.style.opacity = "1";
-  }, 2300);
-
-  setTimeout(() => {
-    rickText.style.opacity = "0";
-  }, 5300);
-
-  setTimeout(() => {
+function resetEasterEgg() {
+  // Reset Portal
+  if (portal) {
     portal.style.animation = "none";
     portal.style.opacity = "0";
+    portal.style.display = "none";
+  }
+  
+  // Reset Rick
+  if (rick) {
     rick.style.animation = "none";
     rick.style.opacity = "0";
-  }, 7000);
+    rick.style.display = "none";
+  }
+  
+  // Reset Text
+  if (rickText) {
+    rickText.style.opacity = "0";
+    rickText.style.display = "none";
+  }
 }
