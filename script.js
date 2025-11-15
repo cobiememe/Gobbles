@@ -21,6 +21,41 @@ const trendBox = document.getElementById("trendBox");
 const filterBadge = document.getElementById("filterBadge");
 const resetFeedBtn = document.getElementById("resetFeedBtn");
 
+// Profil-Level Anzeige-Element
+const profileLevelBadge = document.getElementById("profileLevelBadge");
+
+// ---------- Level System ----------
+const LEVELS = [
+  { level: 1, name: "Greenhorn",     emoji: "🐣" },
+  { level: 2, name: "Newcomer",      emoji: "🌱" },
+  { level: 3, name: "Chatter",       emoji: "🐿️" },
+  { level: 4, name: "Contributor",   emoji: "🔥" },
+  { level: 5, name: "Trusted Voice", emoji: "🦉" },
+  { level: 6, name: "Insider",       emoji: "💎" },
+  { level: 7, name: "Trendsetter",   emoji: "⚡" },
+  { level: 8, name: "Influencer",    emoji: "🐉" },
+  { level: 9, name: "Icon",          emoji: "👑" },
+  { level: 10, name: "Legend",       emoji: "🌌" }
+];
+
+function getLevelMeta(level) {
+  const lvl = Number(level) || 1;
+  return LEVELS.find(l => l.level === lvl) || LEVELS[0];
+}
+
+function renderLevelBadge(level) {
+  const meta = getLevelMeta(level);
+  return `
+    <span class="level-badge level-${meta.level}" title="Level ${meta.level} – ${meta.name}">
+      <span class="level-emoji">${meta.emoji}</span>
+      <span class="level-text">L${meta.level}</span>
+    </span>
+  `;
+}
+
+// aktuelles Level des eingeloggten Users (für Profil / Save)
+let currentLevel = 1;
+
 let wallet = null;
 let currentFilter = null;
 let uploadedAvatar = null;
@@ -255,7 +290,7 @@ async function loadProfile() {
   try {
     const { data, error } = await db
       .from("profiles")
-      .select("bio, portfolio, avatar")
+      .select("bio, portfolio, avatar, level")
       .eq("wallet", wallet)
       .maybeSingle();
 
@@ -268,6 +303,12 @@ async function loadProfile() {
     const bioDisplay = document.getElementById("bioDisplay");
 
     if (data) {
+      currentLevel = data.level || 1;
+
+      if (profileLevelBadge) {
+        profileLevelBadge.innerHTML = renderLevelBadge(currentLevel);
+      }
+
       if (bioInput) bioInput.value = data.bio || "";
       portfolio = Array.isArray(data.portfolio) ? data.portfolio : [];
       updatePortfolioList();
@@ -282,6 +323,11 @@ async function loadProfile() {
         avatarPreview.src = generateFallbackAvatar(wallet);
       }
     } else if (avatarPreview) {
+      currentLevel = 1;
+      if (profileLevelBadge) {
+        profileLevelBadge.innerHTML = renderLevelBadge(currentLevel);
+      }
+
       avatarPreview.src = generateFallbackAvatar(wallet);
       if (bioDisplay) bioDisplay.textContent = "";
     }
@@ -314,6 +360,7 @@ async function saveProfile() {
           bio,
           portfolio: safePortfolio,
           avatar: uploadedAvatar,
+          level: currentLevel || 1,
           updated_at: new Date().toISOString()
         },
         { onConflict: "wallet" }
@@ -599,47 +646,78 @@ async function loadFeed(tag = null){
   
   currentFilter = tag;
   
-  if(tag) {
+  if (tag) {
     filterBadge.style.display = 'inline';
     filterBadge.innerHTML = `Filter: #${tag} <span class="clear-filter" style="cursor:pointer;margin-left:8px">✕</span>`;
   } else {
     filterBadge.style.display = 'none';
   }
 
-  let query = db.from("posts").select("*, replies(count)").order("created_at", {ascending:false});
+  let query = db
+    .from("posts")
+    .select("*, replies(count)")
+    .order("created_at", { ascending:false });
 
-  if(tag) {
+  if (tag) {
     query = query.contains("tags", [tag]);
   }
 
   const { data, error } = await query.limit(50);
     
-  if(error){ 
+  if (error) { 
     console.error("Supabase load error:", error); 
     return; 
   }
 
   try {
+    const posts = data || [];
+
+    // 🔹 Alle Wallets aus den Posts sammeln
+    const wallets = [...new Set(posts.map(p => p.wallet))];
+
+    // 🔹 Levels aus profiles holen
+    let levelByWallet = {};
+    if (wallets.length > 0) {
+      const { data: profileRows, error: profileErr } = await db
+        .from("profiles")
+        .select("wallet, level")
+        .in("wallet", wallets);
+
+      if (!profileErr && profileRows) {
+        profileRows.forEach(row => {
+          levelByWallet[row.wallet] = row.level || 1;
+        });
+      }
+    }
+
+    // 🔹 Avatare + Level kombinieren
     const postsWithAvatars = await Promise.all(
-      (data || []).map(async p => ({ 
+      posts.map(async p => ({ 
         ...p, 
-        img: await avatar(p.wallet) 
+        img: await avatar(p.wallet),
+        level: levelByWallet[p.wallet] || 1
       }))
     );
 
     const htmlParts = [];
     
-    for(const p of postsWithAvatars){
+    for (const p of postsWithAvatars) {
       const hasNft = !!p.img;
       const userVote = localStorage.getItem("vote_" + p.id);
       const replyCount = p.replies?.[0]?.count || 0;
+      const levelBadgeHtml = renderLevelBadge(p.level);
 
       htmlParts.push(`
         <div class="post">
-          <div class="avatar ${hasNft ? "nft-halo" : ""}">${p.img ? `<img src="${p.img}" alt="pfp">` : ""}</div>
+          <div class="avatar ${hasNft ? "nft-halo" : ""}">
+            ${p.img ? `<img src="${p.img}" alt="pfp">` : ""}
+          </div>
           <div>
             <div class="post-header">
-              <b class="wallet-label" data-wallet="${p.wallet}">${p.wallet.slice(0,6)}...</b>
+              <div class="wallet-line">
+                <b class="wallet-label" data-wallet="${p.wallet}">${p.wallet.slice(0,6)}...</b>
+                ${levelBadgeHtml}
+              </div>
               <div class="header-actions">
                 <button class="btn-copy" title="Copy address" data-wallet="${p.wallet}">📋</button>
                 <button class="btn-profile" title="View profile" data-wallet="${p.wallet}">👤</button>
@@ -676,7 +754,7 @@ async function loadFeed(tag = null){
     displayWalletLabels();
 
     const clearBtn = document.querySelector('.clear-filter');
-    if(clearBtn) clearBtn.onclick = () => loadFeed();
+    if (clearBtn) clearBtn.onclick = () => loadFeed();
   } catch (error) {
     console.error("Error loading feed:", error);
     feed.innerHTML = `<div class="post"><p>Error loading posts. Please try again.</p></div>`;
@@ -1049,7 +1127,7 @@ window.addEventListener("load", async ()=>{
 const logo = document.querySelector(".logo-anim");
 const rick = document.getElementById("rick");
 const portal = document.getElementById("portal");
-const rickText = document.getElementById("rick-text");
+const rickText = document.getElementById("rickText");
 const rickSound = document.getElementById("rickSound");
 
 if (logo) {

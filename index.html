@@ -76,14 +76,17 @@
       <div class="profile-left">
         <h2>Your Profile</h2>
 
-       <label class="input-label">Profile Image</label>
-<img id="avatarPreview" class="avatar-preview" alt="Avatar Preview">
+        <!-- 🧬 Level-Anzeige im Profil -->
+        <div id="profileLevelBadge" class="profile-level-badge"></div>
 
-<div class="profile-image-buttons">
-  <label for="avatarUpload" class="upload-btn">Upload Image</label>
-  <button class="reset-btn" onclick="resetAvatar()">🔁 Reset to NFT</button>
-</div>
-<input type="file" id="avatarUpload" accept="image/*" class="file-hidden">
+        <label class="input-label">Profile Image</label>
+        <img id="avatarPreview" class="avatar-preview" alt="Avatar Preview">
+
+        <div class="profile-image-buttons">
+          <label for="avatarUpload" class="upload-btn">Upload Image</label>
+          <button class="reset-btn" onclick="resetAvatar()">🔁 Reset to NFT</button>
+        </div>
+        <input type="file" id="avatarUpload" accept="image/*" class="file-hidden">
 
         <label class="input-label">About you (max 140 chars)</label>
         <textarea id="bioInput" maxlength="140" class="text-input" placeholder="Write something about yourself (max 140 chars)..."></textarea>
