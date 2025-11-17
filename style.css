@@ -1282,29 +1282,56 @@ border-radius: 3px;
   transform-origin: left center;
 }
 
+/* 🌈 Premium Gobbles Rainbow Wallet-Bar (Verbesserte Version B) */
 .wallet-bar {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #dffeff;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #eaffff;
+
+  /* weicherer, edlerer Verlauf */
   background: linear-gradient(
     90deg,
-    rgba(0,255,200,0.25),
-    rgba(0,234,255,0.45),
-    rgba(153,69,255,0.45)
+    rgba(0,225,255,0.32),
+    rgba(153,69,255,0.42),
+    rgba(255,0,180,0.38)
   );
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 0 10px rgba(0,255,200,0.25);
-  margin-bottom: 4px;
+  
+  /* Animation bleibt – aber smoother */
+  background-size: 240% 100%;
+  animation: walletBarFlow 6s ease-in-out infinite;
+
+  /* Leichter, hochwertiger Glow */
+  box-shadow:
+    0 0 12px rgba(0,230,255,0.22),
+    0 0 22px rgba(153,69,255,0.18);
+
+  /* Glassy effect */
+  backdrop-filter: blur(4px);
+
+  border: 1px solid rgba(255,255,255,0.18);
   transition: 0.25s ease;
 }
 
-.wallet-bar:hover {
-  box-shadow: 0 0 16px rgba(0,255,200,0.55);
-  transform: translateY(-1px);
+/* 🌈 Subtile Animation */
+@keyframes walletBarFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
+
+/* ✨ Hover: etwas mehr Glow, aber nicht zu viel */
+.wallet-bar:hover {
+  box-shadow:
+    0 0 18px rgba(0,230,255,0.40),
+    0 0 26px rgba(153,69,255,0.30),
+    0 0 42px rgba(255,0,180,0.40);
+  transform: translateY(-1px) scale(1.02);
+}
+
 
 
 
