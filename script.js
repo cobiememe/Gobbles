@@ -46,10 +46,11 @@ function getLevelMeta(level) {
 function renderLevelBadge(level) {
   const meta = getLevelMeta(level);
   return `
-    <span class="level-badge level-${meta.level}" title="Level ${meta.level} – ${meta.name}">
+    <div class="level-badge level-${meta.level}">
       <span class="level-emoji">${meta.emoji}</span>
-      <span class="level-text">L${meta.level}</span>
-    </span>
+      <span class="level-name">${meta.name}</span>
+      <span class="level-number">L${meta.level}</span>
+    </div>
   `;
 }
 
@@ -715,7 +716,9 @@ async function loadFeed(tag = null){
           <div>
             <div class="post-header">
               <div class="wallet-line">
-                <b class="wallet-label" data-wallet="${p.wallet}">${p.wallet.slice(0,6)}...</b>
+                <div class="wallet-bar" data-wallet="${p.wallet}">
+                  ${p.wallet}
+                </div>
                 ${levelBadgeHtml}
               </div>
               <div class="header-actions">
@@ -763,7 +766,7 @@ async function loadFeed(tag = null){
 
 /* ---------- Wallet Label Display ---------- */
 async function displayWalletLabels() {
-  document.querySelectorAll(".wallet-label").forEach(async el => {
+  document.querySelectorAll(".wallet-bar").forEach(async el => {
     const wallet = el.dataset.wallet;
     const cache = localStorage.getItem("label_" + wallet);
     if(cache) { 
