@@ -777,19 +777,19 @@ async function displayWalletLabels() {
     try {
       const r = await fetch(`https://api.solana.fm/v0/accounts/${wallet}`);
       if (!r.ok) {
-        // Wenn API nicht verfügbar, verwende Standard-Format
-        el.textContent = wallet.slice(0,6)+"...";
+        // Wenn API nicht verfügbar, verwende die vollständige Wallet-Adresse
+        el.textContent = wallet;
         return;
       }
       
       const json = await r.json();
-      const label = json?.result?.account?.accountName || wallet.slice(0,6)+"...";
+      const label = json?.result?.account?.accountName || wallet;
       localStorage.setItem("label_" + wallet, label);
       el.textContent = label;
     } catch (error) {
-      console.log("⚠️ Solana FM API nicht verfügbar, verwende Standard-Label");
-      // Fallback auf Standard-Format bei Fehler
-      el.textContent = wallet.slice(0,6)+"...";
+      console.log("⚠️ Solana FM API nicht verfügbar, verwende vollständige Wallet-Adresse");
+      // Fallback auf vollständige Wallet-Adresse bei Fehler
+      el.textContent = wallet;
     }
   });
 }
