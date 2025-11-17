@@ -43,8 +43,17 @@ function getLevelMeta(level) {
   return LEVELS.find(l => l.level === lvl) || LEVELS[0];
 }
 
+// Hilfsfunktion für Tier-Einteilung
+function getLevelTier(level) {
+  if (level >= 10) return "legend";
+  if (level >= 7) return "elite";
+  if (level >= 4) return "pro";
+  return "novice";
+}
+
 function renderLevelBadge(level) {
   const meta = getLevelMeta(level);
+  meta.levelTier = getLevelTier(level);
   return `
     <div class="level-badge level-${meta.level}">
       <span class="level-emoji">${meta.emoji}</span>
@@ -706,6 +715,8 @@ async function loadFeed(tag = null){
       const hasNft = !!p.img;
       const userVote = localStorage.getItem("vote_" + p.id);
       const replyCount = p.replies?.[0]?.count || 0;
+      const meta = getLevelMeta(p.level);
+      const tier = getLevelTier(p.level);
       const levelBadgeHtml = renderLevelBadge(p.level);
 
       htmlParts.push(`
@@ -716,7 +727,7 @@ async function loadFeed(tag = null){
           <div>
             <div class="post-header">
               <div class="wallet-line">
-                <div class="wallet-bar" data-wallet="${p.wallet}">
+                <div class="wallet-bar level-tier-${tier}" data-wallet="${p.wallet}">
                   ${p.wallet}
                 </div>
                 ${levelBadgeHtml}
