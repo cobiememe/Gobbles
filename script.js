@@ -20,6 +20,8 @@ const boomSound = document.getElementById("boomSound");
 const trendBox = document.getElementById("trendBox");
 const filterBadge = document.getElementById("filterBadge");
 const resetFeedBtn = document.getElementById("resetFeedBtn");
+const searchPostsInput = document.getElementById("searchPostsInput");
+const filterUserInput = document.getElementById("filterUserInput");
 
 // Profil-Level Anzeige-Element
 const profileLevelBadge = document.getElementById("profileLevelBadge");
@@ -69,6 +71,8 @@ let currentLevel = 1;
 let wallet = null;
 let currentFilter = null;
 let uploadedAvatar = null;
+let currentSearchTerm = "";
+let currentUserFilter = "";
 
 /* === Gobbles Portal Hover Sound === */
 document.addEventListener("DOMContentLoaded", () => {
@@ -723,6 +727,16 @@ async function loadFeed(tag = null){
     query = query.contains("tags", [tag]);
   }
 
+  if (currentSearchTerm) {
+    // Inhalt durchsuchen (Case-insensitive)
+    query = query.ilike("content", `%${currentSearchTerm}%`);
+  }
+
+  if (currentUserFilter) {
+    // exakte Wallet-Adresse filtern
+    query = query.eq("wallet", currentUserFilter);
+  }
+
   const { data, error } = await query.limit(50);
     
   if (error) { 
@@ -978,9 +992,42 @@ document.addEventListener("click", e => {
   }
 });
 
+/* === Debounce Helper === */
+function debounce(fn, delay = 300) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), delay);
+  };
+}
+
+/* ---------- Search & Filter Events ---------- */
+if (searchPostsInput) {
+  searchPostsInput.addEventListener("input", debounce(e => {
+    currentSearchTerm = e.target.value.trim();
+    loadFeed(currentFilter);
+  }));
+}
+
+if (filterUserInput) {
+  filterUserInput.addEventListener("input", debounce(e => {
+    currentUserFilter = e.target.value.trim();
+    loadFeed(currentFilter);
+  }));
+}
+
 /* ---------- Reset Feed ---------- */
 if (resetFeedBtn) {
-  resetFeedBtn.onclick = () => loadFeed();
+  resetFeedBtn.onclick = () => {
+    currentFilter = null;
+    currentSearchTerm = "";
+    currentUserFilter = "";
+
+    if (searchPostsInput) searchPostsInput.value = "";
+    if (filterUserInput) filterUserInput.value = "";
+
+    loadFeed();
+  };
 }
 
 /* ---------- Profile Modal ---------- */
