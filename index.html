@@ -104,7 +104,9 @@
           Press Enter after filling both fields to add assets
         </div>
 
-        <button class="btn" onclick="saveProfile()" style="margin-top: 15px;">💾 Save Profile</button>
+        <button id="saveProfileBtn" class="btn" onclick="saveProfile()" style="margin-top: 15px;">
+          💾 Save Profile
+        </button>
       </div>
 
       <!-- Right Side -->
@@ -195,11 +197,11 @@
           <h3>Sentiment & Trends</h3>
           <div class="input-group">
             <label class="input-label">Search Posts</label>
-            <input type="text" class="text-input" placeholder="Enter keyword...">
+            <input id="searchPostsInput" type="text" class="text-input" placeholder="Enter keyword...">
           </div>
           <div class="input-group">
             <label class="input-label">Filter by User</label>
-            <input type="text" class="text-input" placeholder="Wallet address...">
+            <input id="filterUserInput" type="text" class="text-input" placeholder="Wallet address...">
           </div>
         </div>
       </div>
