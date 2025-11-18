@@ -294,14 +294,50 @@ function updateChart() {
 }
 
 /* ---------- Profile Management ---------- */
-async function loadProfile() {
-  if (!wallet) return;
+async function loadProfile(targetWallet, options = {}) {
+  const { readOnly = false } = options;
+
+  const effectiveWallet = targetWallet || wallet;
+  if (!effectiveWallet) return;
+
+  // Modal-Modus setzen (view/edit)
+  const profileModal = document.getElementById("profileModal");
+  if (profileModal) {
+    profileModal.classList.toggle("view-mode", readOnly);
+    profileModal.classList.toggle("edit-mode", !readOnly);
+  }
+
+  // Überschrift anpassen
+  const heading = document.querySelector(".profile-left h2");
+  if (heading) {
+    heading.textContent = readOnly ? "User Profile" : "Your Profile";
+  }
+
+  // Buttons / Inputs für Read-Only umschalten
+  const bioInput = document.getElementById("bioInput");
+  const assetInput = document.getElementById("assetInput");
+  const percentInput = document.getElementById("percentInput");
+  const saveBtn = document.getElementById("saveProfileBtn");
+  const avatarUpload = document.getElementById("avatarUpload");
+  const profileImageButtons = document.querySelector(".profile-image-buttons");
+
+  const isReadOnly = readOnly || (targetWallet && targetWallet !== wallet);
+
+  if (bioInput) bioInput.disabled = isReadOnly;
+  if (assetInput) assetInput.disabled = isReadOnly;
+  if (percentInput) percentInput.disabled = isReadOnly;
+  if (avatarUpload) avatarUpload.disabled = isReadOnly;
+  if (profileImageButtons) profileImageButtons.style.display = isReadOnly ? "none" : "flex";
+  if (saveBtn) {
+    saveBtn.style.display = isReadOnly ? "none" : "inline-block";
+    saveBtn.disabled = isReadOnly;
+  }
 
   try {
     const { data, error } = await db
       .from("profiles")
       .select("bio, portfolio, avatar, level")
-      .eq("wallet", wallet)
+      .eq("wallet", effectiveWallet)
       .maybeSingle();
 
     if (error) {
@@ -309,37 +345,43 @@ async function loadProfile() {
       return;
     }
 
-    const bioInput = document.getElementById("bioInput");
     const bioDisplay = document.getElementById("bioDisplay");
 
     if (data) {
       currentLevel = data.level || 1;
-
       if (profileLevelBadge) {
         profileLevelBadge.innerHTML = renderLevelBadge(currentLevel);
       }
 
-      if (bioInput) bioInput.value = data.bio || "";
       portfolio = Array.isArray(data.portfolio) ? data.portfolio : [];
       updatePortfolioList();
       updateChart();
 
+      if (bioInput) bioInput.value = data.bio || "";
       if (bioDisplay) bioDisplay.textContent = data.bio || "";
 
       if (data.avatar && avatarPreview) {
         uploadedAvatar = data.avatar;
         avatarPreview.src = data.avatar;
       } else if (avatarPreview) {
-        avatarPreview.src = generateFallbackAvatar(wallet);
+        avatarPreview.src = generateFallbackAvatar(effectiveWallet);
       }
-    } else if (avatarPreview) {
+    } else {
+      // Kein Profil vorhanden -> Defaults
       currentLevel = 1;
       if (profileLevelBadge) {
         profileLevelBadge.innerHTML = renderLevelBadge(currentLevel);
       }
+      portfolio = [];
+      updatePortfolioList();
+      updateChart();
 
-      avatarPreview.src = generateFallbackAvatar(wallet);
+      if (bioInput) bioInput.value = "";
       if (bioDisplay) bioDisplay.textContent = "";
+
+      if (avatarPreview) {
+        avatarPreview.src = generateFallbackAvatar(effectiveWallet);
+      }
     }
   } catch (err) {
     console.error("❌ JS error while loading profile:", err);
@@ -396,6 +438,15 @@ async function saveProfile() {
     console.error("❌ JS error:", err);
     alert("Error saving profile: " + err.message);
   }
+}
+
+async function openUserProfile(targetWallet) {
+  if (!targetWallet) return;
+
+  await loadProfile(targetWallet, { readOnly: true });
+
+  const profileModal = document.getElementById("profileModal");
+  if (profileModal) profileModal.style.display = "block";
 }
 
 /* === Reset Avatar Function === */
@@ -979,13 +1030,15 @@ document.addEventListener('click', e => {
     });
   }
 
-  // Open profile modal (aktuell nur eigenes Profil)
+  // Open profile modal (eigenes Profil oder fremdes Profil in View-Mode)
   if (e.target.classList.contains('btn-profile')) {
-    const wallet = e.target.dataset.wallet;
-    if (wallet === window.wallet) {
-      document.querySelector(".profile-link").click();
+    const targetWallet = e.target.dataset.wallet;
+
+    if (targetWallet === window.wallet) {
+      // eigenes Profil -> normaler Edit-Modus
+      document.querySelector(".profile-link")?.click();
     } else {
-      toast(`Profile view for other users coming soon!\nWallet: ${wallet}`);
+      openUserProfile(targetWallet);
     }
   }
 });
